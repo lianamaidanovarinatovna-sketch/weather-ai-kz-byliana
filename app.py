@@ -1,79 +1,71 @@
 import streamlit as st
 import requests
-from PIL import Image
-from datetime import datetime
 
-# ========================
-# API ключ OpenWeatherMap
-# ========================
-API_KEY = "ваш_ключ_OpenWeatherMap"  # вставьте свой ключ
-BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+# -----------------------------
+# Настройки API
+# -----------------------------
+API_KEY = "ВАШ_OPENWEATHERMAP_KEY"  # <-- вставь сюда свой ключ
 
-# ========================
-# Города Казахстана и их пастельные цвета
-# ========================
+# -----------------------------
+# Города и цвета фона (пастель)
+# -----------------------------
 cities = {
-    "Астана": "#B0E0E6",
-    "Алматы": "#FFFACD",
-    "Шымкент": "#E6E6FA",
-    "Актобе": "#F5DEB3",
-    "Актау": "#AFEEEE",
-    "Атырау": "#F0E68C",
-    "Караганда": "#D8BFD8",
-    "Костанай": "#FFE4E1",
-    "Уральск": "#FFF0F5"
+    "Астана": {"api": "Astana", "color": "#cce6ff"},
+    "Алматы": {"api": "Almaty", "color": "#fff0b3"},
+    "Уральск": {"api": "Oral", "color": "#d9f2d9"},
+    "Шымкент": {"api": "Shymkent", "color": "#ffe6cc"},
+    "Актобе": {"api": "Aktobe", "color": "#e6ccff"},
+    "Актау": {"api": "Aktau", "color": "#cce0ff"},
+    "Атырау": {"api": "Atyrau", "color": "#ffffcc"},
+    "Караганда": {"api": "Karaganda", "color": "#ffcccc"},
+    "Костанай": {"api": "Kostanay", "color": "#d9ffff"}
 }
 
-# ========================
-# Генерация сплошного цвета
-# ========================
-def generate_background(color, width=800, height=400):
-    img = Image.new("RGB", (width, height), color)
-    return img
+# -----------------------------
+# Интерфейс
+# -----------------------------
+st.set_page_config(page_title="Weather AI Kazakhstan", layout="wide")
 
-# ========================
-# Интерфейс Streamlit
-# ========================
-st.set_page_config(page_title="Погода Казахстан", layout="wide")
-st.title("🌤 Прогноз погоды по городам Казахстана")
-
-# Разделение на две колонки
-col1, col2 = st.columns([1, 2])  # левая уже, правая шире
-
-# ========================
-# Левая колонка: выбор города и дата
-# ========================
+# Левая колонка — выбор города
+col1, col2 = st.columns([1, 2])
 with col1:
-    city = st.selectbox("Выберите город:", list(cities.keys()))
-    today = datetime.today().strftime("%d.%m.%Y")
-    st.write(f"📅 Сегодня: {today}")
+    st.header("Выберите город")
+    city = st.selectbox("Город:", list(cities.keys()))
 
-# ========================
-# Правая колонка: погода
-# ========================
+# Правая колонка — данные о погоде
 with col2:
-    bg_color = cities[city]
-    bg_img = generate_background(bg_color, width=800, height=400)
-    st.image(bg_img, use_column_width=True)
+    # Цвет фона по выбранному городу
+    st.markdown(
+        f"<div style='background-color:{cities[city]['color']}; padding:20px; border-radius:10px;'>",
+        unsafe_allow_html=True
+    )
 
-    # Получаем данные о погоде
-    params = {
-        "q": city,
-        "appid": API_KEY,
-        "units": "metric",
-        "lang": "ru"
-    }
-    response = requests.get(BASE_URL, params=params)
-    if response.status_code == 200:
+    # -----------------------------
+    # Получение данных о погоде
+    # -----------------------------
+    city_api_name = cities[city]["api"]
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city_api_name}&appid={API_KEY}&units=metric&lang=ru"
+
+    try:
+        response = requests.get(url)
         data = response.json()
-        temp = data["main"]["temp"]
-        humidity = data["main"]["humidity"]
-        pressure = data["main"]["pressure"]
-        weather_desc = data["weather"][0]["description"]
 
-        st.subheader(f"Погода в {city}: {weather_desc.capitalize()}")
-        st.write(f"🌡 Температура: {temp} °C")
-        st.write(f"💧 Влажность: {humidity} %")
-        st.write(f"⚖ Давление: {pressure} hPa")
-    else:
-        st.error("Ошибка при получении данных о погоде!")
+        if response.status_code == 200:
+            temp = data["main"]["temp"]
+            humidity = data["main"]["humidity"]
+            pressure = data["main"]["pressure"]
+            description = data["weather"][0]["description"]
+
+            # Вывод с увеличенным шрифтом
+            st.markdown(f"<h2 style='text-align:center'>{city}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h3>🌡 Температура: {temp} °C</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3>💧 Влажность: {humidity} %</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3>⚖ Давление: {pressure} hPa</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3>🌥 Описание: {description}</h3>", unsafe_allow_html=True)
+        else:
+            st.error("Не удалось получить данные о погоде. Проверьте API Key и название города.")
+
+    except Exception as e:
+        st.error(f"Ошибка при получении данных: {e}")
+
+    st.markdown("</div>", unsafe_allow_html=True)
