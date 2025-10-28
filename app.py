@@ -2,42 +2,39 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# -----------------------------
-# Настройки API
-# -----------------------------
-API_KEY = "ВАШ_OPENWEATHERMAP_KEY"  # <-- вставь сюда свой ключ
+# Настройка страницы
+st.set_page_config(page_title="Weather AI KZ", layout="wide")
 
-# -----------------------------
-# Города, правильные названия для API и пастельные цвета
-# -----------------------------
+# API ключ
+API_KEY = "ВАШ_API_KEY"  # <--- вставь сюда свой ключ OpenWeatherMap
+
+# Города с их цветами и названиями для API
 cities = {
-    "Астана": {"api": "Astana,KZ", "color": "#cce6ff"},
-    "Алматы": {"api": "Almaty,KZ", "color": "#fff0b3"},
-    "Уральск": {"api": "Oral,KZ", "color": "#d9f2d9"},
-    "Шымкент": {"api": "Shymkent,KZ", "color": "#ffe6cc"},
-    "Актобе": {"api": "Aktobe,KZ", "color": "#e6ccff"},
-    "Актау": {"api": "Aktau,KZ", "color": "#cce0ff"},
-    "Атырау": {"api": "Atyrau,KZ", "color": "#ffffcc"},
-    "Караганда": {"api": "Karaganda,KZ", "color": "#ffcccc"},
-    "Костанай": {"api": "Kostanay,KZ", "color": "#d9ffff"}
+    "Астана": {"color": "#A7C7E7", "api": "Astana,KZ"},
+    "Алматы": {"color": "#F7E7A9", "api": "Almaty,KZ"},
+    "Уральск": {"color": "#C3D9A5", "api": "Oral,KZ"},
+    "Шымкент": {"color": "#F9D3B4", "api": "Shymkent,KZ"},
+    "Актобе": {"color": "#D0E3F0", "api": "Aktobe,KZ"},
+    "Актау": {"color": "#B2E0E4", "api": "Aktau,KZ"},
+    "Атырау": {"color": "#F4E1D2", "api": "Atyrau,KZ"},
+    "Караганда": {"color": "#E6D0F0", "api": "Karaganda,KZ"},
+    "Костанай": {"color": "#E7F0C3", "api": "Kostanay,KZ"},
 }
 
-# -----------------------------
-# Интерфейс
-# -----------------------------
-st.set_page_config(page_title="Weather AI Kazakhstan", layout="wide")
+# Разделяем экран
+col1, col2 = st.columns([1,2])
 
-# Левая колонка: выбор города и дата/время
-col1, col2 = st.columns([1, 2])
 with col1:
-    st.header("Выберите город")
+    st.header("Выбор города")
     city = st.selectbox("Город:", list(cities.keys()))
+    
+    # Дата и время
     now = datetime.now()
-    st.markdown(f"<h3>🗓 {now.strftime('%d.%m.%Y')}</h3>", unsafe_allow_html=True)
-    st.markdown(f"<h3>⏰ {now.strftime('%H:%M:%S')}</h3>", unsafe_allow_html=True)
+    st.markdown(f"*Дата:* {now.strftime('%d-%m-%Y')}")
+    st.markdown(f"*Время:* {now.strftime('%H:%M:%S')}")
 
-# Правая колонка: данные о погоде
 with col2:
+    # Цвет фона
     bg_color = cities[city]["color"]
     st.markdown(
         f"<div style='background-color:{bg_color}; padding:20px; border-radius:10px;'>",
@@ -57,7 +54,6 @@ with col2:
             pressure = data["main"]["pressure"]
             description = data["weather"][0]["description"]
 
-            # Вывод с увеличенным шрифтом
             st.markdown(f"<h1 style='text-align:center'>{city}</h1>", unsafe_allow_html=True)
             st.markdown(f"<h2>🌡 Температура: {temp} °C</h2>", unsafe_allow_html=True)
             st.markdown(f"<h2>💧 Влажность: {humidity} %</h2>", unsafe_allow_html=True)
@@ -65,47 +61,6 @@ with col2:
             st.markdown(f"<h2>🌥 Описание: {description}</h2>", unsafe_allow_html=True)
         else:
             st.error(f"Не удалось получить данные о погоде. Проверьте API Key и название города. Код ошибки: {response.status_code}")
-
-    except Exception as e:
-        st.error(f"Ошибка при получении данных: {e}")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-        response = requests.get(url)
-        data = response.json()
-
-        if response.status_code == 200:
-            temp = data["main"]["temp"]
-            humidity = data["main"]["humidity"]
-            pressure = data["main"]["pressure"]
-            description = data["weather"][0]["description"]
-
-            # Вывод с увеличенным шрифтом
-            st.markdown(f"<h1 style='text-align:center'>{city}</h1>", unsafe_allow_html=True)
-            st.markdown(f"<h2>🌡 Температура: {temp} °C</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h2>💧 Влажность: {humidity} %</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h2>⚖ Давление: {pressure} hPa</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h2>🌥 Описание: {description}</h2>", unsafe_allow_html=True)
-        else:
-            st.error(f"Не удалось получить данные о погоде. Проверьте API Key и название города. Код ошибки: {response.status_code}")
-
-    except Exception as e:
-        st.error(f"Ошибка при получении данных: {e}")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-        if response.status_code == 200:
-            temp = data["main"]["temp"]
-            humidity = data["main"]["humidity"]
-            pressure = data["main"]["pressure"]
-            description = data["weather"][0]["description"]
-
-            # Вывод с увеличенным шрифтом
-            st.markdown(f"<h2 style='text-align:center'>{city}</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h3>🌡 Температура: {temp} °C</h3>", unsafe_allow_html=True)
-            st.markdown(f"<h3>💧 Влажность: {humidity} %</h3>", unsafe_allow_html=True)
-            st.markdown(f"<h3>⚖ Давление: {pressure} hPa</h3>", unsafe_allow_html=True)
-            st.markdown(f"<h3>🌥 Описание: {description}</h3>", unsafe_allow_html=True)
-        else:
-            st.error("Не удалось получить данные о погоде. Проверьте API Key и название города.")
 
     except Exception as e:
         st.error(f"Ошибка при получении данных: {e}")
