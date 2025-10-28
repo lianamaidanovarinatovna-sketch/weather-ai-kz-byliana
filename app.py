@@ -70,6 +70,28 @@ with col2:
         st.error(f"Ошибка при получении данных: {e}")
 
     st.markdown("</div>", unsafe_allow_html=True)
+        response = requests.get(url)
+        data = response.json()
+
+        if response.status_code == 200:
+            temp = data["main"]["temp"]
+            humidity = data["main"]["humidity"]
+            pressure = data["main"]["pressure"]
+            description = data["weather"][0]["description"]
+
+            # Вывод с увеличенным шрифтом
+            st.markdown(f"<h1 style='text-align:center'>{city}</h1>", unsafe_allow_html=True)
+            st.markdown(f"<h2>🌡 Температура: {temp} °C</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h2>💧 Влажность: {humidity} %</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h2>⚖ Давление: {pressure} hPa</h2>", unsafe_allow_html=True)
+            st.markdown(f"<h2>🌥 Описание: {description}</h2>", unsafe_allow_html=True)
+        else:
+            st.error(f"Не удалось получить данные о погоде. Проверьте API Key и название города. Код ошибки: {response.status_code}")
+
+    except Exception as e:
+        st.error(f"Ошибка при получении данных: {e}")
+
+    st.markdown("</div>", unsafe_allow_html=True)
         if response.status_code == 200:
             temp = data["main"]["temp"]
             humidity = data["main"]["humidity"]
