@@ -1,94 +1,57 @@
 import streamlit as st
-from datetime import datetime
+import requests
+from PIL import Image, ImageDraw
 
-# =======================
-# Настройка страницы
-# =======================
-st.set_page_config(
-    page_title="Weather AI KZ",
-    page_icon="🌤️",
-    layout="centered",
-    initial_sidebar_state="expanded"
-)
+# --- Настройки страницы ---
+st.set_page_config(page_title="Weather AI Kazakhstan", layout="centered")
 
-# =======================
-# Данные и города
-# =======================
-cities = ["Астана", "Алматы", "Шымкент", "Актобе", "Актау", "Атырау", "Караганда", "Костанай", "Уральск"]
+st.title("🌤 Прогноз погоды Казахстан")
 
-# =======================
-# Сайдбар
-# =======================
-st.sidebar.title("Выберите город")
-choice = st.sidebar.selectbox("Город:", cities)
+# --- Список городов ---
+cities = ["Астана", "Алматы", "Уральск", "Шымкент", "Актобе", "Актау", "Атырау", "Караганда", "Костанай"]
+city = st.selectbox("Выберите город", cities)
 
-st.sidebar.markdown("---")
-st.sidebar.write("Лиана Байляна — Weather AI KZ")
-st.sidebar.write(f"Дата: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+# --- Функция генерации градиента (замена фона) ---
+def generate_gradient(width=800, height=400, top_color="#87CEEB", bottom_color="#FFFFFF"):
+    img = Image.new("RGB", (width, height), top_color)
+    draw = ImageDraw.Draw(img)
+    for y in range(height):
+        r = int(int(top_color[1:3],16)(1 - y/height) + int(bottom_color[1:3],16)(y/height))
+        g = int(int(top_color[3:5],16)(1 - y/height) + int(bottom_color[3:5],16)(y/height))
+        b = int(int(top_color[5:7],16)(1 - y/height) + int(bottom_color[5:7],16)(y/height))
+        draw.line([(0,y),(width,y)], fill=(r,g,b))
+    return img
 
-# =======================
-# Дизайн фона в зависимости от погоды
-# =======================
-# Для примера используем фиктивные значения, позже подключим API
-weather_conditions = {
-    "Астана": "sunny",
-    "Алматы": "rain",
-    "Шымкент": "cloudy",
-    "Актобе": "snow",
-    "Актау": "sunny",
-    "Атырау": "rain",
-    "Караганда": "cloudy",
-    "Костанай": "snow",
-    "Уральск": "sunny"
+# --- Настройка цветов для городов ---
+city_colors = {
+    "Астана": ("#a0c4ff", "#ffffff"),
+    "Алматы": ("#90be6d", "#d9f0a3"),
+    "Уральск": ("#f9c74f", "#fefae0"),
+    "Шымкент": ("#f8961e", "#fce8c2"),
+    "Актобе": ("#577590", "#bcd4e6"),
+    "Актау": ("#43aa8b", "#c7f0e3"),
+    "Атырау": ("#f94144", "#fcd6d6"),
+    "Караганда": ("#6a4c93", "#d9d2e9"),
+    "Костанай": ("#f3722c", "#fde2d2")
 }
 
-condition = weather_conditions.get(choice, "sunny")
+top_color, bottom_color = city_colors.get(city, ("#87CEEB","#FFFFFF"))
+bg_img = generate_gradient(top_color=top_color, bottom_color=bottom_color)
+st.image(bg_img, use_column_width=True)
 
-if condition == "sunny":
-    bg_color = "linear-gradient(135deg, #FFD200, #FF7300)"
-    emoji = "☀️"
-elif condition == "rain":
-    bg_color = "linear-gradient(135deg, #00C6FB, #005BEA)"
-    emoji = "🌧️"
-elif condition == "cloudy":
-    bg_color = "linear-gradient(135deg, #D7D2CC, #304352)"
-    emoji = "☁️"
-elif condition == "snow":
-    bg_color = "linear-gradient(135deg, #E0EAFB, #A6C0FE)"
-    emoji = "❄️"
-else:
-    bg_color = "linear-gradient(135deg, #FFD200, #FF7300)"
-    emoji = "🌤️"
+# --- Погода через OpenWeatherMap API (нужно свой API ключ) ---
+api_key = "ТВОЙ_API_KEY"
+weather_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=metric&appid={api_key}&lang=ru"
 
-# =======================
-# Применяем фон через CSS
-# =======================
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background: {bg_color};
-        color: white;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# =======================
-# Главный контент
-# =======================
-st.title(f"{emoji} Погода в {choice}")
-st.subheader("Прогноз AI на сегодня")
-
-# Пример данных, позже можно подключить API
-import random
-temperature = random.randint(-10, 35)
-humidity = random.randint(30, 90)
-pressure = random.randint(980, 1030)
-
-st.metric(label="🌡️ Температура", value=f"{temperature}°C")
-st.metric(label="💧 Влажность", value=f"{humidity}%")
-st.metric(label="🌬️ Давление", value=f"{pressure} hPa")
-
-st.info("⚙️ В будущем сюда можно добавить графики, голосовой AI и прогноз на несколько дней.")
+try:
+    data = requests.get(weather_url).json()
+    if data.get("cod") != 200:
+        st.error("Ошибка получения данных о погоде!")
+    else:
+        st.subheader(f"{data['name']}, {data['sys']['country']}")
+        st.write(f"🌡 Температура: {data['main']['temp']} °C")
+        st.write(f"💧 Влажность: {data['main']['humidity']} %")
+        st.write(f"🌬 Ветер: {data['wind']['speed']} м/с")
+        st.write(f"☁ Погода: {data['weather'][0]['description'].capitalize()}")
+except:
+    st.error("Не удалось подключиться к API. Проверьте ключ и интернет.")
