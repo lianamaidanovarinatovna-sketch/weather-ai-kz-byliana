@@ -1,68 +1,127 @@
+# app.py
 import streamlit as st
 import requests
 from datetime import datetime
 
-# Настройка страницы
-st.set_page_config(page_title="Weather AI KZ", layout="wide")
+# ======================
+# Настройки
+# ======================
+API_KEY = ""  # <- Вставь свой OpenWeatherMap API ключ сюда. Если пусто — будут тестовые данные.
+BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
-# API ключ
-API_KEY = "ВАШ_API_KEY"  # <--- вставь сюда свой ключ OpenWeatherMap
-
-# Города с их цветами и названиями для API
+# Города + имя для API (надёжные названия) + пастельный цвет
 cities = {
-    "Астана": {"color": "#A7C7E7", "api": "Astana,KZ"},
-    "Алматы": {"color": "#F7E7A9", "api": "Almaty,KZ"},
-    "Уральск": {"color": "#C3D9A5", "api": "Oral,KZ"},
-    "Шымкент": {"color": "#F9D3B4", "api": "Shymkent,KZ"},
-    "Актобе": {"color": "#D0E3F0", "api": "Aktobe,KZ"},
-    "Актау": {"color": "#B2E0E4", "api": "Aktau,KZ"},
-    "Атырау": {"color": "#F4E1D2", "api": "Atyrau,KZ"},
-    "Караганда": {"color": "#E6D0F0", "api": "Karaganda,KZ"},
-    "Костанай": {"color": "#E7F0C3", "api": "Kostanay,KZ"},
+    "Астана":     {"api": "Astana",     "color": "#cce6ff"},
+    "Алматы":     {"api": "Almaty",     "color": "#fff0b3"},
+    "Уральск":    {"api": "Oral",       "color": "#d9f2d9"},
+    "Шымкент":    {"api": "Shymkent",   "color": "#ffe6cc"},
+    "Актобе":     {"api": "Aktobe",     "color": "#e6ccff"},
+    "Актау":      {"api": "Aktau",      "color": "#cce0ff"},
+    "Атырау":     {"api": "Atyrau",     "color": "#ffffcc"},
+    "Караганда":  {"api": "Karaganda",  "color": "#ffdfe8"},
+    "Костанай":   {"api": "Kostanay",   "color": "#d9ffff"}
 }
 
-# Разделяем экран
-col1, col2 = st.columns([1,2])
-
-with col1:
-    st.header("Выбор города")
-    city = st.selectbox("Город:", list(cities.keys()))
-    
-    # Дата и время
-    now = datetime.now()
-    st.markdown(f"*Дата:* {now.strftime('%d-%m-%Y')}")
-    st.markdown(f"*Время:* {now.strftime('%H:%M:%S')}")
-
-with col2:
-    # Цвет фона
-    bg_color = cities[city]["color"]
-    st.markdown(
-        f"<div style='background-color:{bg_color}; padding:20px; border-radius:10px;'>",
-        unsafe_allow_html=True
-    )
-
-    city_api_name = cities[city]["api"]
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city_api_name}&appid={API_KEY}&units=metric&lang=ru"
-
+# ======================
+# Помощники
+# ======================
+def get_weather_for(city_api_name):
+    """Возвращает dict с погодой или None (если ошибка)."""
+    if not API_KEY:
+        # тестовые данные, если ключ не задан — так ты всегда увидишь вывод
+        return {
+            "ok": True,
+            "name": city_api_name,
+            "temp": 12.3,
+            "humidity": 62,
+            "pressure": 1008,
+            "desc": "облачно"
+        }
     try:
-        response = requests.get(url)
-        data = response.json()
-
-        if response.status_code == 200:
-            temp = data["main"]["temp"]
-            humidity = data["main"]["humidity"]
-            pressure = data["main"]["pressure"]
-            description = data["weather"][0]["description"]
-
-            st.markdown(f"<h1 style='text-align:center'>{city}</h1>", unsafe_allow_html=True)
-            st.markdown(f"<h2>🌡 Температура: {temp} °C</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h2>💧 Влажность: {humidity} %</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h2>⚖ Давление: {pressure} hPa</h2>", unsafe_allow_html=True)
-            st.markdown(f"<h2>🌥 Описание: {description}</h2>", unsafe_allow_html=True)
-        else:
-            st.error(f"Не удалось получить данные о погоде. Проверьте API Key и название города. Код ошибки: {response.status_code}")
-
+        params = {"q": city_api_name + ",KZ", "appid": API_KEY, "units": "metric", "lang": "ru"}
+        r = requests.get(BASE_URL, params=params, timeout=6)
+        if r.status_code != 200:
+            return {"ok": False, "error": f"HTTP {r.status_code}: {r.text}"}
+        d = r.json()
+        return {
+            "ok": True,
+            "name": d.get("name", city_api_name),
+            "temp": d["main"]["temp"],
+            "humidity": d["main"]["humidity"],
+            "pressure": d["main"]["pressure"],
+            "desc": d["weather"][0]["description"]
+        }
     except Exception as e:
-        st.error(f"Ошибка при получении данных: {e}")
+        return {"ok": False, "error": str(e)}
 
+# ======================
+# Интерфейс
+# ======================
+st.set_page_config(page_title="Weather AI Kazakhstan", layout="wide")
+st.title("🌤 Weather AI — Казахстан (простой, надёжный)")
+
+# делим экран: левая узкая, правая широкая
+col_left, col_right = st.columns([1, 2])
+
+with col_left:
+    st.subheader("Выбор")
+    city = st.selectbox("Город:", list(cities.keys()))
+    now = datetime.now()
+    # дата и время большими буквами
+    st.markdown(f"<div style='font-size:18px; margin-top:10px;'>📅 <b>{now.strftime('%d.%m.%Y')}</b></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size:18px;'>⏰ <b>{now.strftime('%H:%M:%S')}</b></div>", unsafe_allow_html=True)
+    st.write("")  # отступ
+    if not API_KEY:
+        st.warning("API key не задан. Показаны тестовые данные. Вставь ключ в app.py для реальных данных.")
+
+with col_right:
+    # чтобы фон занимал всю правую область — используем div с width:100% и min-height
+    color = cities[city]["color"]
+    container_html = f"""
+    <div style="
+        width:100%;
+        min-height:420px;
+        padding:18px;
+        border-radius:10px;
+        background:{color};
+        box-sizing:border-box;
+    ">
+    """
+    st.markdown(container_html, unsafe_allow_html=True)
+
+    # Получаем погоду
+    info = get_weather_for(cities[city]["api"])
+
+    if not info or not info.get("ok"):
+        err = info.get("error") if info else "неизвестная ошибка"
+        st.markdown(f"<div style='color:#900; font-size:18px;'><b>Ошибка получения погоды:</b> {err}</div>", unsafe_allow_html=True)
+    else:
+        # выводим крупным шрифтом — ровно то, что просила
+        st.markdown(f"<h1 style='margin:6px 0 6px 0; text-align:center;'>{city}</h1>", unsafe_allow_html=True)
+
+        # карточки по строкам (большой шрифт)
+        metric_html = f"""
+        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center; align-items:center;">
+          <div style="min-width:170px; padding:12px; border-radius:8px; background:rgba(255,255,255,0.7);">
+            <div style="font-size:16px;"><b>🌡 Температура</b></div>
+            <div style="font-size:24px; margin-top:6px;">{info['temp']} °C</div>
+          </div>
+          <div style="min-width:170px; padding:12px; border-radius:8px; background:rgba(255,255,255,0.7);">
+            <div style="font-size:16px;"><b>💧 Влажность</b></div>
+            <div style="font-size:24px; margin-top:6px;">{info['humidity']} %</div>
+          </div>
+          <div style="min-width:170px; padding:12px; border-radius:8px; background:rgba(255,255,255,0.7);">
+            <div style="font-size:16px;"><b>⚖ Давление</b></div>
+            <div style="font-size:24px; margin-top:6px;">{info['pressure']} hPa</div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:16px; font-size:18px;">
+          <b>Описание:</b> {info['desc'].capitalize()}
+        </div>
+        """
+        st.markdown(metric_html, unsafe_allow_html=True)
+
+    # закрываем контейнер
     st.markdown("</div>", unsafe_allow_html=True)
+
+# Конец
